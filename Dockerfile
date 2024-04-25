@@ -1,5 +1,5 @@
 # 使用Golang 1.18作为基础镜像
-FROM golang:1.18
+FROM golang:1.19
 
 # 设置工作目录
 WORKDIR /app
