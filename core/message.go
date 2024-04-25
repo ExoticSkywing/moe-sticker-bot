@@ -16,14 +16,14 @@ import (
 
 func sendStartMessage(c tele.Context) error {
 	message := `
-Hi! I'm <a href="https://github.com/star-39/moe-sticker-bot">moe_sticker_bot</a>! Please:
+Hi! I'm <a href="https://spark.moony.la">moe_sticker_bot</a>! Please:
 • Send <b>LINE/Kakao sticker share link</b> to import or download.
 • Send <b>Telegram sticker/link/GIF</b> to download or export to WhatsApp.
 • Send <b>keywords</b> to search sticker sets.
 • Tap to <b>/create</b> or <b>/manage</b> sticker set and CustomEmoji.
 • Tap to check all available <b>/command_list</b>.
 
-你好! 歡迎使用<a href="https://github.com/star-39/moe-sticker-bot">萌萌貼圖BOT</a>! 請：
+你好! 歡迎使用<a href="https://spark.moony.la">萌萌貼圖BOT</a>! 請：
 • 傳送<b>LINE/kakao貼圖包的分享連結</b>來匯入或下載.
 • 傳送<b>Telegram貼圖/連結/GIF</b>來下載或匯出到WhatsApp.
 • 傳送<b>關鍵字</b>來搜尋貼圖包.
