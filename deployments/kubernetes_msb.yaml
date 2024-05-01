@@ -19,13 +19,13 @@ spec:
     - name: NGINX_PORT
       value: "443"
     - name: NGINX_CERT
-      value: /certs/live/YOUR_WEBSITE/fullchain.pem
+      value: /certs/live/emoji.1yo.cc/fullchain.pem
     - name: WEBAPP_ROOT
       value: /webapp
     - name: WEBAPP_ADDR
       value: 127.0.0.1:3921/webapp
     - name: NGINX_KEY
-      value: /certs/live/YOUR_WEBSITE/privkey.pem
+      value: /certs/live/emoji.1yo.cc/privkey.pem
     image: ghcr.io/star-39/moe-sticker-bot:msb_nginx_aarch64
     name: msbnginx
     ports:
@@ -46,10 +46,10 @@ spec:
 
   - command:
     - /moe-sticker-bot
-    - --bot_token=BOT_TOKEN
+    - --bot_token=6613391715:AAEpAgWSYUW7DcHoXNgTdJgxtMilm7NiIXs
     - --webapp
     - --webapp_url
-    - https://example.com/
+    - https://emjdl.1yo.cc/
     - --webapp_data_dir
     - /webapp/data/
     - --webapp_listen_addr
@@ -60,8 +60,8 @@ spec:
     - --db_user
     - root
     - --db_pass
-    - DB_ROOT_PASS
-    image: ghcr.io/star-39/moe-sticker-bot:aarch64
+    - 8501
+    image: ghcr.io/exoticskywing/moe-sticker-bot:latest
     name: msb
     resources: {}
     securityContext:
@@ -77,7 +77,7 @@ spec:
     - mariadbd
     env:
     - name: MARIADB_ROOT_PASSWORD
-      value: DB_ROOT_PASS
+      value: 8501
     image: docker.io/library/mariadb:10.6
     name: msbmariadb
     resources: {}

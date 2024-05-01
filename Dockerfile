@@ -1,5 +1,5 @@
 # 使用Golang 1.18作为基础镜像
-FROM golang:1.19
+FROM golang:1.22.2
 
 # 设置工作目录
 WORKDIR /app
@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     gifsicle \
     python3 \
     python3-pip \
+    exiv2 \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装Python依赖(可选)
