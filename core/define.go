@@ -10,7 +10,7 @@ import (
 	tele "gopkg.in/telebot.v3"
 )
 
-var BOT_VERSION = "2.4.0-RC4"
+var BOT_VERSION = "2.5.0-RC1"
 
 var b *tele.Bot
 var cronScheduler *gocron.Scheduler
@@ -21,6 +21,8 @@ var botName string
 // ['uid'] -> bool channels
 var autocommitWorkersList = make(map[int64][]chan bool)
 var users Users
+
+var MSB_DEFAULT_STICKER_KEYWORDS = []string{"sticker", "moe_sticker_bot", "moe"}
 
 const (
 	CB_DN_WHOLE           = "dall"
@@ -39,6 +41,8 @@ const (
 	CB_DELETE_STICKER     = "dels"
 	CB_DELETE_STICKER_SET = "delss"
 	CB_CHANGE_TITLE       = "changetitle"
+	CB_REGULAR_STICKER    = "regular"
+	CB_CUSTOM_EMOJI       = "customemoji"
 
 	ST_WAIT_WEBAPP = "waitWebApp"
 	ST_PROCESSING  = "process"
@@ -125,15 +129,26 @@ func (ud *UserData) udSetState(state string) {
 	ud.state = state
 }
 
-// Object for ants worker function.
-// wg must be initialized with wg.Add(1)
+// StickerFile object, for internal use.
+// Also used for ants worker function.
+// wg must be initialized with wg.Add(1) and must be waited when cPath is needed!
 type StickerFile struct {
 	wg sync.WaitGroup
+	//Telegram FileID(if exists on cloud)
+	fileID string
 	// path of original file
+	// If fileID exists, oPath can be omitted.
 	oPath string
 	// path of converted filea
 	cPath  string
 	cError error
+	//////////////////
+	//Following fields comply with tele.InputSticker
+	//////////////////
+	emojis   []string `json:"emoji_list"`
+	keywords []string `json:"keywords"`
+	//One of static, video, animated.
+	format string `json:"format"`
 }
 
 // General sticker data for internal use.
@@ -160,18 +175,11 @@ type StickerData struct {
 	flCount int
 }
 
-func (sd StickerData) getFormat() string {
-	if sd.isVideo {
-		return "video"
-	} else {
-		return "static"
-	}
-}
-
 type StickerDownloadObject struct {
 	wg      sync.WaitGroup
 	sticker tele.Sticker
 	dest    string
+	isVideo bool
 	//Convert to conventional format?
 	needConvert bool
 	//Shrink oversized GIF?

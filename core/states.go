@@ -259,8 +259,7 @@ NEXT:
 	if err != nil {
 		return c.Send("error preparing stickers for webapp /quit")
 	}
-	if (ud.stickerData.isVideo && ud.stickerData.cAmount == 50) ||
-		(ud.stickerData.cAmount == 120) {
+	if ud.stickerData.cAmount == 120 {
 		sendStickerSetFullWarning(c)
 	}
 	setState(c, "waitCbEditChoice")
@@ -352,10 +351,7 @@ func waitSType(c tele.Context) error {
 	}
 
 	ud := users.data[c.Sender().ID]
-	if strings.Contains(c.Callback().Data, "video") {
-		ud.stickerData.isVideo = true
-	}
-	if strings.Contains(c.Callback().Data, "emoji") {
+	if strings.Contains(c.Callback().Data, CB_CUSTOM_EMOJI) {
 		ud.stickerData.stickerSetType = tele.StickerCustomEmoji
 		ud.stickerData.isCustomEmoji = true
 	} else {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
 	"os/exec"
@@ -12,12 +11,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
 )
 
 func parseKakaoLink(link string, ld *LineData) (string, error) {
 	var kakaoID string
-	var eid string
+	// var eid string
 	var err error
 	var warn string
 
@@ -29,7 +29,7 @@ func parseKakaoLink(link string, ld *LineData) (string, error) {
 		kakaoID = path.Base(url.Path)
 	// Kakao mobile app share link.
 	case "emoticon.kakao.com":
-		eid, kakaoID, err = fetchKakaoDetailsFromShareLink(link)
+		_, kakaoID, err = fetchKakaoDetailsFromShareLink(link)
 		if err != nil {
 			return warn, err
 		}
@@ -41,18 +41,19 @@ func parseKakaoLink(link string, ld *LineData) (string, error) {
 	var kakaoJson KakaoJson
 	err = fetchKakaoMetadata(&kakaoJson, kakaoID)
 	if err != nil {
+		log.Debugln("Failed fetchKakaoMetadata:", err)
 		return warn, err
 	}
 
 	log.Debugln("Parsed kakao link:", link)
 	log.Debugln(kakaoJson.Result)
 
-	if url.Host == "emoticon.kakao.com" {
-		ld.DLink = fmt.Sprintf("http://item.kakaocdn.net/dw/%s.file_pack.zip", eid)
-	} else {
-		ld.DLinks = kakaoJson.Result.ThumbnailUrls
-		warn = WARN_KAKAO_PREFER_SHARE_LINK
-	}
+	// if url.Host == "emoticon.kakao.com" {
+	// 	ld.DLink = fmt.Sprintf("http://item.kakaocdn.net/dw/%s.file_pack.zip", eid)
+	// } else {
+	ld.DLinks = kakaoJson.Result.ThumbnailUrls
+	// warn = WARN_KAKAO_PREFER_SHARE_LINK
+	// }
 
 	ld.Title = kakaoJson.Result.Title
 	ld.Id = kakaoJson.Result.TitleUrl
@@ -74,6 +75,8 @@ func fetchKakaoMetadata(kakaoJson *KakaoJson, kakaoID string) error {
 		log.Errorln("Failed json parsing kakao link!", err)
 		return err
 	}
+
+	log.Debugln("fetchKakaoMetadata: api link metadata fetched:", apiUrl)
 	return nil
 }
 
@@ -128,6 +131,7 @@ func prepareKakaoZipStickers(ctx context.Context, ld *LineData, workDir string, 
 	zipPath := filepath.Join(workDir, "kakao.zip")
 	os.MkdirAll(workDir, 0755)
 
+	log.Debugln("prepareKakaoZipStickers: downloading zip:", ld.DLink)
 	err := fDownload(ld.DLink, zipPath)
 	if err != nil {
 		return err
@@ -183,18 +187,32 @@ func kakaoZipExtract(f string, ld *LineData) []string {
 	return files
 }
 
-// kakao eid(code), kakao id
+// Return: kakao eid(code), kakao id, error
 func fetchKakaoDetailsFromShareLink(link string) (string, string, error) {
+	log.Debugln("fetchKakaoDetailsFromShareLink: Link is:", link)
 	res, err := httpGetAndroidUA(link)
 	if err != nil {
+		log.Errorln("fetchKakaoDetailsFromShareLink: failed httpGetAndroidUA!", err)
 		return "", "", err
 	}
-	split1 := strings.Split(res, "kakaotalk://store/emoticon/")
-	if len(split1) < 2 {
-		return "", "", errors.New("error fetchKakaoDetailsFromShareLink")
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(res))
+	if err != nil {
+		log.Errorln("fetchKakaoDetailsFromShareLink failed gq parsing line link!", err)
+		return "", "", err
 	}
-	eid := strings.Split(split1[1], "?")[0]
-	log.Debugln("kakao eid is: ", eid)
+
+	//This eid seemed to be fake.
+	//There will be no fix soon.
+	//In the future we might use other package to complete
+	//kakao download.
+	eid := ""
+	doc.Find("a").Each(func(i int, s *goquery.Selection) {
+		value, _ := s.Attr("id")
+		if value == "app_scheme_link" {
+			eid, _ = s.Attr("data-i")
+		}
+	})
+	log.Debugln("kakao eid is:", eid)
 	redirLink, _, err := httpGetWithRedirLink(link)
 	if err != nil {
 		return "", "", err

@@ -25,7 +25,7 @@ Hi! I'm <a href="https://spark.moony.la">moe_sticker_bot</a>! Please:
 
 你好! 歡迎使用<a href="https://spark.moony.la">萌萌貼圖BOT</a>! 請：
 • 傳送<b>LINE/kakao貼圖包的分享連結</b>來匯入或下載.
-• 傳送<b>Telegram貼圖/連結/GIF</b>來下載或匯出到WhatsApp.
+• 傳送<b>Telegram貼圖/連結/GIF</b>來下載.
 • 傳送<b>關鍵字</b>來搜尋貼圖包.
 • 傳送 <b>/create</b> 或 <b>/manage</b> 來創建或管理貼圖包和表情貼。
 • 傳送 <b>/command_list</b> 檢視所有可用指令.
@@ -48,7 +48,6 @@ func sendCommandList(c tele.Context) error {
 
 func sendAboutMessage(c tele.Context) {
 	c.Send(fmt.Sprintf(`
-@%s by @plow283
 <b>Please star for this project on Github if you like this bot!
 如果您喜歡這個bot, 歡迎在Github給本專案標Star喔!
 https://github.com/star-39/moe-sticker-bot</b>
@@ -64,12 +63,11 @@ Please send /start to start using
 </b><code>
 Version:版本: %s
 </code>
-`, botName, BOT_VERSION), tele.ModeHTML)
+`, BOT_VERSION), tele.ModeHTML)
 }
 
 func sendFAQ(c tele.Context) {
 	c.Send(fmt.Sprintf(`
-@%s by @plow283
 <b>Please hit Star for this project on Github if you like this bot!
 如果您喜歡這個bot, 歡迎在Github給本專案標Star喔!
 https://github.com/star-39/moe-sticker-bot</b>
@@ -84,22 +82,25 @@ A: Please send /quit to interrupt.
 A: It's forced by Telegram, bot created sticker set must have its name in ID suffix.
 因為這個是Telegram的強制要求, 由bot創造的貼圖ID末尾必須有bot名字.
 
-<b>Q: Can I add video sticker to static sticker set or vice versa?
-    我可以往靜態貼圖包加動態貼圖, 或者反之嗎?</b>
-A: Yes, however, video will be static in static set
-    可以. 惟動態貼圖在靜態貼圖包裡會變成靜態.
-
 <b>Q: Who owns the sticker sets the bot created?
     BOT創造的貼圖包由誰所有?</b>
 A: It's you of course. You can manage them through /manage or Telegram's official @Stickers bot.
     當然是您. 您可以通過 /manage 指令或者Telegram官方的 @Stickers 管理您的貼圖包.
-`, botName, botName, botName), tele.ModeHTML)
+`, botName, botName), tele.ModeHTML)
 }
 
 func sendChangelog(c tele.Context) error {
 	return c.Send(`
 Details: 詳細:
 https://github.com/star-39/moe-sticker-bot#changelog
+v2.5.0-RC1(20240528)
+* Support mix-typed sticker set.
+* You can add video to static set and vice versa.
+* Removed WhatsApp export temporarily .
+* 支援混合貼圖包。
+* 貼圖包可以同時存入靜態與動態貼圖。
+* 暫時移除WhatsApp匯出功能。
+
 v2.4.0-RC1-RC4(20240304)
 * Support Importing LINE Emoji into CustomEmoji.
 * Support creating CustomEmoji.
@@ -193,11 +194,11 @@ func sendAskEmoji(c tele.Context) error {
 	selector.Inline(selector.Row(btnManu), selector.Row(btnRand))
 
 	return c.Send(`
-Telegram sticker requires emoji to represent it:
-• Press "Assign separately" to assign emoji one by one.
+Telegram requires emoji to and keywords for each sticker:
+• Press "Assign separately" to assign emoji and keywords one by one.
 • Send an emoji to do batch assign.
-Telegram要求為貼圖設定emoji來表示它:
-• 按下"分別設定"來為每個貼圖分別設定相應的emoji.
+Telegram要求為每張貼圖分別設定emoji和關鍵字:
+• 按下"分別設定"來為每個貼圖分別設定相應的emoji和關鍵字.
 • 傳送一個emoji來為全部貼圖設定成一樣的.
 `, selector)
 }
@@ -226,15 +227,15 @@ func genSDnMnEInline(canManage bool, isTGS bool, sn string) *tele.ReplyMarkup {
 	btnSingle := selector.Data("Download this sticker/下載這張貼圖", CB_DN_SINGLE)
 	btnAll := selector.Data("Download sticker set/下載整個貼圖包", CB_DN_WHOLE)
 	btnMan := selector.Data("Manage sticker set/管理這個貼圖包", CB_MANAGE)
-	btnExport := selector.Data("Export to WhatsApp/匯出到WhatsApp", CB_EXPORT_WA)
+	// btnExport := selector.Data("Export to WhatsApp/匯出到WhatsApp", CB_EXPORT_WA)
 	if canManage {
-		selector.Inline(selector.Row(btnSingle), selector.Row(btnAll), selector.Row(btnMan), selector.Row(btnExport))
+		selector.Inline(selector.Row(btnSingle), selector.Row(btnAll), selector.Row(btnMan))
 	} else {
 		if isTGS {
 			//If is TGS, do not support export to WA.
 			selector.Inline(selector.Row(btnSingle), selector.Row(btnAll))
 		} else {
-			selector.Inline(selector.Row(btnSingle), selector.Row(btnAll), selector.Row(btnExport))
+			selector.Inline(selector.Row(btnSingle), selector.Row(btnAll))
 		}
 	}
 	return selector
@@ -281,7 +282,7 @@ You can download this sticker set. Press Yes to continue.
 func sendAskWantImportOrDownload(c tele.Context, avalAsEmoji bool) error {
 	msg := ""
 	selector := &tele.ReplyMarkup{}
-	btnImportSticker := selector.Data("Import sticker set/匯入貼圖包", CB_OK_IMPORT)
+	btnImportSticker := selector.Data("Import as sticker set/作為普通貼圖包匯入", CB_OK_IMPORT)
 	btnImportEmoji := selector.Data("Import as CustomEmoji/作為表情貼匯入", CB_OK_IMPORT_EMOJI)
 	btnDownload := selector.Data("Download/下載", CB_OK_DN)
 	if avalAsEmoji {
@@ -431,27 +432,12 @@ func sendSearchResult(entriesWant int, lines []LineStickerQ, c tele.Context) err
 }
 
 func sendAskStickerFile(c tele.Context) error {
-
-	if users.data[c.Sender().ID].stickerData.isVideo {
-		c.Send("Please send images/stickers/videos(less than 50 in total),\n" +
-			"or send an archive containing image files,\n" +
-			"wait until upload complete, then tap 'Done adding'.\n\n" +
-			"請傳送任意格式的圖片/貼圖/影片(少於50張)\n" +
-			"或者傳送內有貼圖檔案的歸檔,\n" +
-			"等候所有檔案上載完成, 然後按下「停止增添」\n")
-		c.Send("Special note: Sending GIF with transparent background will lose transparency.\n" +
-			"You can compress your GIF into a ZIP file then send it to bot to bypass.\n" +
-			"特別提示: 傳送帶有透明背景的GIF會丟失透明層.\n" +
-			"您可以將貼圖放入ZIP歸檔中再傳送給bot來繞過這個限制.")
-	} else {
-		c.Send("Please send images/photos/stickers(less than 120 in total),\n" +
-			"or send an archive containing image files,\n" +
-			"wait until upload complete, then tap 'Done adding'.\n\n" +
-			"請傳送任意格式的圖片/照片/貼圖(少於120張)\n" +
-			"或者傳送內有貼圖檔案的歸檔,\n" +
-			"等候所有檔案上載完成, 然後按下「停止增添」\n")
-	}
-	return nil
+	return c.Send("Please send images/photos/stickers(less than 120 in total),\n" +
+		"or send an archive containing image files,\n" +
+		"wait until upload complete, then tap 'Done adding'.\n\n" +
+		"請傳送任意格式的圖片/影片/貼圖(少於120張)\n" +
+		"或者傳送內有貼圖檔案的歸檔,\n" +
+		"等候所有檔案上載完成, 然後按下「停止增添」\n")
 }
 
 func sendInStateWarning(c tele.Context) error {
@@ -474,19 +460,18 @@ func sendNoSessionWarning(c tele.Context) error {
 
 func sendAskSTypeToCreate(c tele.Context) error {
 	selector := &tele.ReplyMarkup{}
-	btnStatic := selector.Data("Regular Sticker/普通貼圖", "static")
-	btnAnimated := selector.Data("Animated Sticker/動態貼圖", "video")
-	btnStaticEmoji := selector.Data("Static Custom Emoji/表情貼", "staticemoji")
-	btnAnimatedEmoji := selector.Data("Animated Custom Emoji/動態表情貼", "videoemoji")
+	btnRegular := selector.Data("Regular sticker set/普通貼圖包", CB_REGULAR_STICKER)
+	btnCustomEmoji := selector.Data("Custom Emoji/表情貼", CB_CUSTOM_EMOJI)
 
-	selector.Inline(selector.Row(btnStatic), selector.Row(btnAnimated), selector.Row(btnStaticEmoji), selector.Row(btnAnimatedEmoji))
-	return c.Send("What kind of sticker set you want to create?\n"+
-		"您想要創建何種類型的貼圖包?", selector)
+	selector.Inline(selector.Row(btnRegular), selector.Row(btnCustomEmoji))
+	return c.Send("What kind of sticker set you want to create?\nNote that custom emoji can only be sent by Telegram Premium member."+
+		"您想要創建何種類型的貼圖包?\n請注意只有Telgram會員可以傳送表情貼。", selector)
 }
 
 func sendAskEmojiAssign(c tele.Context) error {
 	sd := users.data[c.Sender().ID].stickerData
-	sd.stickers[sd.pos].wg.Wait()
+	sf := sd.stickers[sd.pos]
+	sf.wg.Wait()
 	caption := fmt.Sprintf(`
 Send emoji(s) representing this sticker.
 請傳送代表這個貼圖的emoji(可以多個).
@@ -494,8 +479,16 @@ Send emoji(s) representing this sticker.
 %d of %d
 `, sd.pos+1, sd.lAmount)
 
-	err := c.Send(&tele.Photo{
-		File:    tele.FromDisk(sd.stickers[sd.pos].oPath),
+	if sf.fileID != "" {
+		msg, _ := c.Bot().Send(c.Sender(), &tele.Sticker{
+			File: tele.File{FileID: sf.fileID},
+		})
+		_, err := c.Bot().Reply(msg, caption)
+		return err
+	}
+
+	err := c.Send(&tele.Video{
+		File:    tele.FromDisk(sf.oPath),
 		Caption: caption,
 	})
 	if err != nil {
@@ -510,7 +503,10 @@ Send emoji(s) representing this sticker.
 				Caption:  caption,
 			})
 			if err3 != nil {
-				return err3
+				err4 := c.Send(&tele.Sticker{File: tele.File{FileID: sd.stickers[sd.pos].oPath}})
+				if err4 != nil {
+					return err4
+				}
 			}
 		}
 	}
@@ -533,7 +529,7 @@ func sendFatalError(err error, c tele.Context) {
 
 	c.Send("<b>Fatal error encounterd. Please try again. /start\n"+
 		"發生嚴重錯誤. 請您從頭再試一次. /start </b>\n\n"+
-		"You can report this error to @plow283 or https://github.com/star-39/moe-sticker-bot/issues\n\n"+
+		"You can report this error to https://github.com/star-39/moe-sticker-bot/issues\n\n"+
 		"<code>"+errMsg+"</code>", tele.ModeHTML, tele.NoPreview)
 }
 
@@ -765,11 +761,6 @@ func sendBadImportLinkWarn(c tele.Context) error {
 		"For example: 例如:\n"+
 		"<code>https://store.line.me/stickershop/product/7673/ja</code>\n"+
 		"<code>https://e.kakao.com/t/pretty-all-friends</code>", tele.ModeHTML)
-}
-
-func sendNotifyWorkingOnBackground(c tele.Context) error {
-	return c.Send("Work has been started on the background. You can continue using other features. /start\n" +
-		"工作已開始在背景處理, 您可以繼續使用bot的其他功能. /start")
 }
 
 func sendNoSToManage(c tele.Context) error {
